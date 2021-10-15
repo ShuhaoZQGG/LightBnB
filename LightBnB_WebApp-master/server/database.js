@@ -140,6 +140,12 @@ exports.getAllReservations = getAllReservations;
   } else if (options.minimum_price_per_night && options.maximum_price_per_night) {
     queryParams.push(options.minimum_price_per_night, options.maximum_price_per_night);
     queryString += `WHERE cost_per_night >= $${queryParams.length-1} AND cost_per_night <=  $${queryParams.length}`
+  } else if (options.minimum_price_per_night) {
+    queryParams.push(options.minimum_price_per_night);
+    queryString += `WHERE cost_per_night >= $${queryParams.length}`;
+  } else if (options.minimum_price_per_night) {
+    queryParams.push(options.maximum_price_per_night);
+    queryString += `WHERE cost_per_night <= $${queryParams.length}`;
   }
 
   if (options.minimum_rating) {
@@ -179,9 +185,44 @@ exports.getAllProperties = getAllProperties;
  * @return {Promise<{}>} A promise to the property.
  */
 const addProperty = function(property) {
+  /*
   const propertyId = Object.keys(properties).length + 1;
   property.id = propertyId;
   properties[propertyId] = property;
   return Promise.resolve(property);
+  */
+  const queryString = `
+  INSERT INTO properties (owner_id, title, description, thumbnail_photo_url, cover_photo_url, 
+                          cost_per_night, parking_spaces, number_of_bathrooms, number_of_bedrooms,
+                          country, street, city, province, post_code)
+  VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+  RETURNING *;
+  `;
+
+  const queryParams = [
+    property.owner_id,
+    property.title,
+    property.description,
+    property.thumbnail_photo_url,
+    property.cover_photo_url,
+    property.cost_per_night,
+    property.parking_spaces,
+    property.number_of_bathrooms,
+    property.number_of_bedrooms,
+    property.country,
+    property.street,
+    property.city,
+    property.province,
+    property.post_code
+                 ]
+
+  return pool.query(queryString, queryParams)
+             .then ((result) => {
+                console.log(result.rows);
+                return result.rows;
+              })
+              .catch((err) => {
+                console.log(err)
+              });
 }
 exports.addProperty = addProperty;
